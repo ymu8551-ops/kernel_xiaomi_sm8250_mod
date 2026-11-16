@@ -89,6 +89,8 @@ if [ "$2" == "ksu" ]; then
 else
     KSU_ENABLE=0
 fi
+    echo "CONFIG_KPROBES=y" >> arch/arm64/configs/${TARGET_DEVICE}_defconfig
+    echo "CONFIG_KSU=y" >> arch/arm64/configs/${TARGET_DEVICE}_defconfig
 
 
 echo "TARGET_DEVICE: $TARGET_DEVICE"
