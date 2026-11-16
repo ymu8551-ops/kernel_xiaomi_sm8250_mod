@@ -274,7 +274,7 @@ if [ $KSU_ENABLE -eq 1 ]; then
     -e KSU_SUSFS_OPEN_REDIRECT \
     -e KSU_SUSFS_SUS_MAP \
     -e THREAD_INFO_IN_TASK \
-    -e KPM \
+    -d KPM \
     -e KSU_MULTI_MANAGER_SUPPORT
 else
     scripts/config --file out/.config -d KSU
@@ -332,8 +332,8 @@ mv .dts.bak ${dts_source}
 rm -rf anykernel/kernels/
 mkdir -p anykernel/kernels/
 
-# Patch for SukiSU KPM support. 
-if [ $KSU_ENABLE -eq 1 ]; then
+# Patch for SukiSU KPM support. (disabled for 4.19)
+if false; then
     cd out/arch/arm64/boot/
     wget https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.12.2/patch_linux
     chmod +x patch_linux
