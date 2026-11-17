@@ -115,6 +115,16 @@ if old in s:
     open(p,'w').write(s.replace(old,new)); print('patched init.c OK')
 else:
     print('WARN: MODULE_IMPORT_NS pattern not found')
+# 4.19 无 linux/pgtable.h，改用 asm/pgtable.h
+import os
+for dp,_,fs in os.walk('drivers/kernelsu'):
+    for fn in fs:
+        if fn.endswith(('.c','.h')):
+            fp=os.path.join(dp,fn)
+            t=open(fp).read()
+            if '#include <linux/pgtable.h>' in t:
+                open(fp,'w').write(t.replace('#include <linux/pgtable.h>','#include <asm/pgtable.h>'))
+                print('pgtable patched', fp)
 PATCH_EOF
 
 
