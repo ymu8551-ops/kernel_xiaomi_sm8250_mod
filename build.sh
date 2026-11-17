@@ -146,6 +146,16 @@ if os.path.exists(p3):
     s3=re.sub(r'[ \t]*p->ops\.remap_file_range = [^\n]*\n', '', s3)
     open(p3,'w').write(s3)
     print('file_wrapper cleaned')
+# 4.19 无 security_inode_init_security_anon(5.1+)，降级为 no-op
+for dp,_,fs in os.walk('drivers/kernelsu'):
+    for fn in fs:
+        if not fn.endswith(('.c','.h')): continue
+        fp=os.path.join(dp,fn)
+        t=open(fp).read()
+        if 'security_inode_init_security_anon(' in t and 'define security_inode_init_security_anon' not in t:
+            hdr='#include <linux/version.h>\n#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 1, 0)\n#define security_inode_init_security_anon(inode, name, ctx) (0)\n#endif\n'
+            open(fp,'w').write(hdr+t)
+            print('anon_security patched', fp)
 PATCH_EOF
 
 
