@@ -310,6 +310,7 @@ scripts/config --file out/.config \
     -e MI_RECLAIM \
     -e RTMM \
 
+make $MAKE_ARGS olddefconfig
 make $MAKE_ARGS -j$(nproc)
 
 
