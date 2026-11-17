@@ -135,23 +135,17 @@ for dp,_,fs in os.walk('drivers/kernelsu'):
                 hdr='#include <linux/version.h>\n#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)\n#define copy_to_kernel_nofault(dst, src, size) probe_kernel_write(dst, src, size)\n#endif\n'
                 open(fp,'w').write(hdr+t)
                 print('nofault patched', fp)
-# file_operations 新成员在 4.19 不存在：iopoll(5.1+) / remap_file_range(4.20+)
-p2='drivers/kernelsu/infra/file_wrapper.c'
-if os.path.exists(p2):
-    s2=open(p2).read()
-    s2=s2.replace('#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\nstatic int ksu_wrapper_iopoll',
-        '#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)\n#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)\nstatic int ksu_wrapper_iopoll',1)
-    s2=s2.replace('    return orig->f_op->iopoll(kiocb, spin);\n}\n#endif\n',
-        '    return orig->f_op->iopoll(kiocb, spin);\n}\n#endif\n#endif\n',1)
-    s2=s2.replace('static loff_t ksu_wrapper_remap_file_range(struct file *file_in',
-        '#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0)\nstatic loff_t ksu_wrapper_remap_file_range(struct file *file_in',1)
-    s2=s2.replace('\nstatic int ksu_wrapper_fadvise','\n#endif\n\nstatic int ksu_wrapper_fadvise',1)
-    s2=s2.replace('    p->ops.iopoll = fp->f_op->iopoll ? ksu_wrapper_iopoll : NULL;',
-        '#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)\n    p->ops.iopoll = fp->f_op->iopoll ? ksu_wrapper_iopoll : NULL;\n#endif',1)
-    s2=s2.replace('    p->ops.remap_file_range = fp->f_op->remap_file_range ? ksu_wrapper_remap_file_range : NULL;',
-        '#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 20, 0)\n    p->ops.remap_file_range = fp->f_op->remap_file_range ? ksu_wrapper_remap_file_range : NULL;\n#endif',1)
-    open(p2,'w').write(s2)
-    print('file_wrapper patched')
+# 4.19 的 file_operations 无 iopoll/remap_file_range：整块剔除
+import re
+p3='drivers/kernelsu/infra/file_wrapper.c'
+if os.path.exists(p3):
+    s3=open(p3).read()
+    s3=re.sub(r'#if LINUX_VERSION_CODE >= KERNEL_VERSION\(5, 10, 0\)\nstatic int ksu_wrapper_iopoll.*?\n#endif\n', '', s3, flags=re.S)
+    s3=re.sub(r'[ \t]*p->ops\.iopoll = [^\n]*\n', '', s3)
+    s3=re.sub(r'static loff_t ksu_wrapper_remap_file_range.*?\n\}\n', '', s3, flags=re.S)
+    s3=re.sub(r'[ \t]*p->ops\.remap_file_range = [^\n]*\n', '', s3)
+    open(p3,'w').write(s3)
+    print('file_wrapper cleaned')
 PATCH_EOF
 
 
@@ -367,7 +361,7 @@ scripts/config --file out/.config \
     -e RTMM \
 
 make $MAKE_ARGS olddefconfig
-make $MAKE_ARGS -j$(nproc)
+make $MAKE_ARGS -j$(nproc) -k
 
 
 
