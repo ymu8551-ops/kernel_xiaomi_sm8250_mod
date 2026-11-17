@@ -125,6 +125,16 @@ for dp,_,fs in os.walk('drivers/kernelsu'):
             if '#include <linux/pgtable.h>' in t:
                 open(fp,'w').write(t.replace('#include <linux/pgtable.h>','#include <asm/pgtable.h>'))
                 print('pgtable patched', fp)
+# 4.19 无 copy_to_kernel_nofault，映射到 probe_kernel_write
+for dp,_,fs in os.walk('drivers/kernelsu'):
+    for fn in fs:
+        if fn.endswith(('.c','.h')):
+            fp=os.path.join(dp,fn)
+            t=open(fp).read()
+            if 'copy_to_kernel_nofault' in t and 'define copy_to_kernel_nofault' not in t:
+                hdr='#include <linux/version.h>\n#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)\n#define copy_to_kernel_nofault(dst, src, size) probe_kernel_write(dst, src, size)\n#endif\n'
+                open(fp,'w').write(hdr+t)
+                print('nofault patched', fp)
 PATCH_EOF
 
 
