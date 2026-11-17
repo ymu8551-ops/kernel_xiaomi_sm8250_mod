@@ -71,15 +71,24 @@ jobs:
     - name: Build kernel
       run: |
         if [ "${{ github.event.inputs.include_ksu }}" = "true" ]; then
-          bash build.sh ${{ github.event.inputs.device }} ksu
+          bash build.sh ${{ github.event.inputs.device }} ksu 2>&1 | tee full-build.log
         else
-          bash build.sh ${{ github.event.inputs.device }}
+          bash build.sh ${{ github.event.inputs.device }} 2>&1 | tee full-build.log
         fi
+
+    - name: Upload build log
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log
+        path: full-build.log
+        retention-days: 3
 
     - name: Show ccache stats
       run: ccache -s
 
     - name: Upload build artifacts
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: ${{ github.event.inputs.device }}${{ github.event.inputs.include_ksu == 'true' && '-ksu' || '' }}-kernel
